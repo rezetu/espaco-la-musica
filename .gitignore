@@ -1,0 +1,26 @@
+# Ignorar diretórios de dependências
+node_modules/
+backend/target/
+
+# Ignorar arquivos de configuração de IDEs
+.idea/
+.vscode/
+*.iml
+
+# Ignorar arquivos de log
+*.log
+
+# Ignorar arquivos de build do frontend
+frontend/dist/
+
+# Ignorar variáveis de ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignorar arquivos de sistema
+.DS_Store
+Thumbs.db
+
