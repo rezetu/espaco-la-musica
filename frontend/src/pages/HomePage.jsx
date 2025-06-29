@@ -1,166 +1,94 @@
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react'
+import { useState, useEffect } from "react";
 
 function HomePage() {
-  const [stats, setStats] = useState({
+  const [dashboardData, setDashboardData] = useState({
     totalPessoas: 0,
     totalCursos: 0,
     totalMatriculas: 0,
-    cursosAtivos: 0
-  })
+  });
 
   useEffect(() => {
-    // Buscar estatísticas das APIs
-    fetchStats()
-  }, [])
+    // Simular chamada de API para dados do dashboard
+    const fetchDashboardData = async () => {
+      try {
+        // Exemplo de chamadas para APIs de contagem
+        const pessoasResponse = await fetch("http://localhost:8080/api/pessoas");
+        const pessoas = await pessoasResponse.json();
 
-  const fetchStats = async () => {
-    try {
-      const [pessoasRes, cursosRes, matriculasRes] = await Promise.all([
-        fetch('http://localhost:8080/api/pessoas'),
-        fetch('http://localhost:8080/api/cursos'),
-        fetch('http://localhost:8080/api/matriculas')
-      ])
+        const cursosResponse = await fetch("http://localhost:8080/api/cursos");
+        const cursos = await cursosResponse.json();
 
-      const pessoas = await pessoasRes.json()
-      const cursos = await cursosRes.json()
-      const matriculas = await matriculasRes.json()
+        const matriculasResponse = await fetch("http://localhost:8080/api/matriculas");
+        const matriculas = await matriculasResponse.json();
 
-      const cursosAtivos = cursos.filter(curso => curso.ativo).length
+        setDashboardData({
+          totalPessoas: pessoas.length,
+          totalCursos: cursos.length,
+          totalMatriculas: matriculas.length,
+        });
+      } catch (error) {
+        console.error("Erro ao buscar dados do dashboard:", error);
+      }
+    };
 
-      setStats({
-        totalPessoas: pessoas.length,
-        totalCursos: cursos.length,
-        totalMatriculas: matriculas.length,
-        cursosAtivos
-      })
-    } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error)
-    }
-  }
-
-  const statCards = [
-    {
-      title: 'Total de Pessoas',
-      value: stats.totalPessoas,
-      description: 'Pessoas cadastradas no sistema',
-      icon: Users,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Total de Cursos',
-      value: stats.totalCursos,
-      description: 'Cursos disponíveis',
-      icon: BookOpen,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Cursos Ativos',
-      value: stats.cursosAtivos,
-      description: 'Cursos atualmente ativos',
-      icon: TrendingUp,
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Total de Matrículas',
-      value: stats.totalMatriculas,
-      description: 'Matrículas realizadas',
-      icon: UserCheck,
-      color: 'text-orange-600'
-    }
-  ]
+    fetchDashboardData();
+  }, []);
 
   return (
-    <div className="px-4 py-6 sm:px-0">
-      <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
-        <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">
-            Bem-vindo ao Espaço La Música
-          </h1>>
-          <p className="text-lg text-gray-600">
-            Gerencie pessoas, cursos e matrículas de forma eficiente
-          </p>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">
+        Bem-vindo ao Espaço La Música
+      </h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card Total Pessoas */}
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-700">Total de Pessoas</h2>
+            <p className="text-4xl font-bold text-indigo-600">
+              {dashboardData.totalPessoas}
+            </p>
+          </div>
+          <Users className="w-12 h-12 text-indigo-400" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat, index) => {
-            const Icon = stat.icon
-            return (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {stat.title}
-                  </CardTitle>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stat.description}
-                  </p>
-                </CardContent>
-              </Card>
-            )
-          })}
+        {/* Card Total Cursos */}
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-700">Total de Cursos</h2>
+            <p className="text-4xl font-bold text-green-600">
+              {dashboardData.totalCursos}
+            </p>
+          </div>
+          <Book className="w-12 h-12 text-green-400" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="w-5 h-5 mr-2 text-blue-600" />
-                Pessoas
-              </CardTitle>
-              <CardDescription>
-                Gerencie o cadastro de alunos, professores e funcionários
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Cadastre e mantenha informações atualizadas de todas as pessoas do sistema.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <BookOpen className="w-5 h-5 mr-2 text-green-600" />
-                Cursos
-              </CardTitle>
-              <CardDescription>
-                Administre os cursos oferecidos pela instituição
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Crie, edite e gerencie todos os cursos disponíveis para matrícula.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <UserCheck className="w-5 h-5 mr-2 text-orange-600" />
-                Matrículas
-              </CardTitle>
-              <CardDescription>
-                Controle as matrículas e pagamentos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">
-                Realize matrículas, acompanhe pagamentos e gerencie o status dos alunos.
-              </p>
-            </CardContent>
-          </Card>
+        {/* Card Total Matrículas */}
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-700">Total de Matrículas</h2>
+            <p className="text-4xl font-bold text-yellow-600">
+              {dashboardData.totalMatriculas}
+            </p>
+          </div>
+          <GraduationCap className="w-12 h-12 text-yellow-400" />
         </div>
       </div>
+
+      <div className="mt-8 p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Visão Geral</h2>
+        <p className="text-gray-600">
+          Este é o painel de controle do sistema Espaço La Música. Aqui você pode gerenciar
+          pessoas, cursos e matrículas de forma eficiente.
+        </p>
+        <p className="text-gray-600 mt-2">
+          Utilize o menu lateral para navegar entre as diferentes seções do sistema.
+        </p>
+      </div>
     </div>
-  )
+  );
 }
 
-export default HomePage
+export default HomePage;
+
 

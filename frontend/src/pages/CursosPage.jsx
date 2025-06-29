@@ -1,332 +1,244 @@
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Input } from '@/components/ui/input.jsx'
-import { Label } from '@/components/ui/label.jsx'
-import { Textarea } from '@/components/ui/textarea.jsx'
-import { Switch } from '@/components/ui/switch.jsx'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
-import { Plus, Edit, Trash2, Search, BookOpen } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import { Label } from "../components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Switch } from "../components/ui/switch";
+import { toast } from "../components/ui/use-toast";
 
 function CursosPage() {
-  const [cursos, setCursos] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingCurso, setEditingCurso] = useState(null)
+  const [cursos, setCursos] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentCurso, setCurrentCurso] = useState(null);
   const [formData, setFormData] = useState({
-    nome: '',
-    descricao: '',
-    valor: '',
-    cargaHoraria: '',
-    ativo: true
-  })
+    nome: "",
+    descricao: "",
+    duracaoHoras: 0,
+    ativo: true,
+  });
 
   useEffect(() => {
-    fetchCursos()
-  }, [])
+    fetchCursos();
+  }, []);
 
   const fetchCursos = async () => {
     try {
-      setLoading(true)
-      const response = await fetch('http://localhost:8080/api/cursos')
-      const data = await response.json()
-      setCursos(data)
+      const response = await fetch("http://localhost:8080/api/cursos");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setCursos(data);
     } catch (error) {
-      console.error('Erro ao buscar cursos:', error)
-    } finally {
-      setLoading(false)
+      console.error("Erro ao buscar cursos:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os cursos.",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSwitchChange = (checked) => {
+    setFormData((prev) => ({ ...prev, ativo: checked }));
+  };
+
+  const handleSaveCurso = async () => {
     try {
-      const url = editingCurso 
-        ? `http://localhost:8080/api/cursos/${editingCurso.id}`
-        : 'http://localhost:8080/api/cursos'
-      
-      const method = editingCurso ? 'PUT' : 'POST'
-      
+      const method = currentCurso ? "PUT" : "POST";
+      const url = currentCurso
+        ? `http://localhost:8080/api/cursos/${currentCurso.id}`
+        : "http://localhost:8080/api/cursos";
+
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          valor: parseFloat(formData.valor),
-          cargaHoraria: parseInt(formData.cargaHoraria)
-        }),
-      })
+        body: JSON.stringify(formData),
+      });
 
-      if (response.ok) {
-        await fetchCursos()
-        setIsDialogOpen(false)
-        resetForm()
-      } else {
-        console.error('Erro ao salvar curso')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      toast({
+        title: "Sucesso",
+        description: `Curso ${currentCurso ? "atualizado" : "cadastrado"} com sucesso.`, 
+      });
+      setIsModalOpen(false);
+      fetchCursos();
     } catch (error) {
-      console.error('Erro ao salvar curso:', error)
+      console.error("Erro ao salvar curso:", error);
+      toast({
+        title: "Erro",
+        description: `Não foi possível ${currentCurso ? "atualizar" : "cadastrar"} o curso.`, 
+        variant: "destructive",
+      });
     }
-  }
+  };
 
-  const handleEdit = (curso) => {
-    setEditingCurso(curso)
-    setFormData({
-      nome: curso.nome,
-      descricao: curso.descricao,
-      valor: curso.valor.toString(),
-      cargaHoraria: curso.cargaHoraria.toString(),
-      ativo: curso.ativo
-    })
-    setIsDialogOpen(true)
-  }
+  const handleEditCurso = (curso) => {
+    setCurrentCurso(curso);
+    setFormData(curso);
+    setIsModalOpen(true);
+  };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir este curso?')) {
-      try {
-        const response = await fetch(`http://localhost:8080/api/cursos/${id}`, {
-          method: 'DELETE',
-        })
-
-        if (response.ok) {
-          await fetchCursos()
-        } else {
-          console.error('Erro ao excluir curso')
-        }
-      } catch (error) {
-        console.error('Erro ao excluir curso:', error)
-      }
+  const handleDeleteCurso = async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir este curso?")) {
+      return;
     }
-  }
-
-  const toggleStatus = async (curso) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/cursos/${curso.id}/status/${!curso.ativo}`, {
-        method: 'PATCH',
-      })
+      const response = await fetch(`http://localhost:8080/api/cursos/${id}`, {
+        method: "DELETE",
+      });
 
-      if (response.ok) {
-        await fetchCursos()
-      } else {
-        console.error('Erro ao alterar status do curso')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      toast({
+        title: "Sucesso",
+        description: "Curso excluído com sucesso.",
+      });
+      fetchCursos();
     } catch (error) {
-      console.error('Erro ao alterar status do curso:', error)
+      console.error("Erro ao excluir curso:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o curso.",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
-  const resetForm = () => {
+  const openNewCursoModal = () => {
+    setCurrentCurso(null);
     setFormData({
-      nome: '',
-      descricao: '',
-      valor: '',
-      cargaHoraria: '',
-      ativo: true
-    })
-    setEditingCurso(null)
-  }
-
-  const filteredCursos = cursos.filter(curso =>
-    curso.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    curso.descricao.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
+      nome: "",
+      descricao: "",
+      duracaoHoras: 0,
+      ativo: true,
+    });
+    setIsModalOpen(true);
+  };
 
   return (
-    <div className="px-4 py-6 sm:px-0">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Gerenciamento de Cursos</CardTitle>
-              <CardDescription>
-                Cadastre e gerencie os cursos oferecidos
-              </CardDescription>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Curso
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Gerenciar Cursos</h1>
+        <Button onClick={openNewCursoModal}>Novo Curso</Button>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nome</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead>Duração (horas)</TableHead>
+            <TableHead>Ativo</TableHead>
+            <TableHead>Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {cursos.map((curso) => (
+            <TableRow key={curso.id}>
+              <TableCell>{curso.nome}</TableCell>
+              <TableCell>{curso.descricao}</TableCell>
+              <TableCell>{curso.duracaoHoras}</TableCell>
+              <TableCell>{curso.ativo ? "Sim" : "Não"}</TableCell>
+              <TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditCurso(curso)}
+                  className="mr-2"
+                >
+                  Editar
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingCurso ? 'Editar Curso' : 'Novo Curso'}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {editingCurso 
-                      ? 'Edite as informações do curso.' 
-                      : 'Preencha as informações para cadastrar um novo curso.'
-                    }
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="nome" className="text-right">
-                        Nome
-                      </Label>
-                      <Input
-                        id="nome"
-                        value={formData.nome}
-                        onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                        className="col-span-3"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="descricao" className="text-right">
-                        Descrição
-                      </Label>
-                      <Textarea
-                        id="descricao"
-                        value={formData.descricao}
-                        onChange={(e) => setFormData({...formData, descricao: e.target.value})}
-                        className="col-span-3"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="valor" className="text-right">
-                        Valor (R$)
-                      </Label>
-                      <Input
-                        id="valor"
-                        type="number"
-                        step="0.01"
-                        value={formData.valor}
-                        onChange={(e) => setFormData({...formData, valor: e.target.value})}
-                        className="col-span-3"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="cargaHoraria" className="text-right">
-                        Carga Horária
-                      </Label>
-                      <Input
-                        id="cargaHoraria"
-                        type="number"
-                        value={formData.cargaHoraria}
-                        onChange={(e) => setFormData({...formData, cargaHoraria: e.target.value})}
-                        className="col-span-3"
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="ativo" className="text-right">
-                        Ativo
-                      </Label>
-                      <Switch
-                        id="ativo"
-                        checked={formData.ativo}
-                        onCheckedChange={(checked) => setFormData({...formData, ativo: checked})}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">
-                      {editingCurso ? 'Salvar Alterações' : 'Cadastrar'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Search className="w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Buscar por nome ou descrição..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDeleteCurso(curso.id)}
+                >
+                  Excluir
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
-          {loading ? (
-            <div className="text-center py-4">Carregando...</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Carga Horária</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCursos.map((curso) => (
-                  <TableRow key={curso.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center">
-                        <BookOpen className="w-4 h-4 mr-2 text-blue-600" />
-                        {curso.nome}
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">{curso.descricao}</TableCell>
-                    <TableCell>{formatCurrency(curso.valor)}</TableCell>
-                    <TableCell>{curso.cargaHoraria}h</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={curso.ativo ? "default" : "secondary"}
-                        className="cursor-pointer"
-                        onClick={() => toggleStatus(curso)}
-                      >
-                        {curso.ativo ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(curso)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(curso.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-
-          {!loading && filteredCursos.length === 0 && (
-            <div className="text-center py-4 text-gray-500">
-              Nenhum curso encontrado.
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{currentCurso ? "Editar Curso" : "Novo Curso"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nome" className="text-right">
+                Nome
+              </Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="descricao" className="text-right">
+                Descrição
+              </Label>
+              <Input
+                id="descricao"
+                value={formData.descricao}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="duracaoHoras" className="text-right">
+                Duração (horas)
+              </Label>
+              <Input
+                id="duracaoHoras"
+                type="number"
+                value={formData.duracaoHoras}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ativo" className="text-right">
+                Ativo
+              </Label>
+              <Switch
+                id="ativo"
+                checked={formData.ativo}
+                onCheckedChange={handleSwitchChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsModalOpen(false)} variant="outline">
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveCurso}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }
 
-export default CursosPage
+export default CursosPage;
+
 

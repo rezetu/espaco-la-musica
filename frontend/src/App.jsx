@@ -1,75 +1,74 @@
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Users, BookOpen, UserCheck, Home } from 'lucide-react'
-import PessoasPage from './pages/PessoasPage.jsx'
-import CursosPage from './pages/CursosPage.jsx'
-import MatriculasPage from './pages/MatriculasPage.jsx'
-import HomePage from './pages/HomePage.jsx'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Home, Users, Book, GraduationCap } from 'lucide-react';
+import { cn } from './lib/utils';
 
-function Navigation() {
-  const location = useLocation()
-  
-  const navItems = [
-    { path: '/', label: 'Início', icon: Home },
-    { path: '/pessoas', label: 'Pessoas', icon: Users },
-    { path: '/cursos', label: 'Cursos', icon: BookOpen },
-    { path: '/matriculas', label: 'Matrículas', icon: UserCheck },
-  ]
+import HomePage from './pages/HomePage';
+import PessoasPage from './pages/PessoasPage';
+import CursosPage from './pages/CursosPage';
+import MatriculasPage from './pages/MatriculasPage';
 
-  return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">Espaço La Música</h1>
-            </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = location.pathname === item.path
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive
-                        ? 'border-blue-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
-  )
-}
+const navItems = [
+  { name: 'Início', icon: Home, path: '/' },
+  { name: 'Pessoas', icon: Users, path: '/pessoas' },
+  { name: 'Cursos', icon: Book, path: '/cursos' },
+  { name: 'Matrículas', icon: GraduationCap, path: '/matriculas' },
+];
 
 function App() {
+  const location = useLocation();
+
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white shadow-md flex flex-col">
+        <div className="p-4 border-b">
+          <h1 className="text-2xl font-bold text-gray-800">Espaço La Música</h1>
+        </div>
+        <nav className="flex-1 px-2 py-4 space-y-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.name}
+              to={item.path}
+              className={cn(
+                'flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-200',
+                location.pathname === item.path && 'bg-gray-200 font-semibold'
+              )}
+            >
+              <item.icon className="w-5 h-5 mr-3" />
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 bg-white shadow-md">
+          <h1 className="text-xl font-bold text-gray-900">Espaço La Música</h1>
+          {/* User profile or other header elements can go here */}
+        </header>
+
+        {/* Page Content */}
+        <div className="flex-1 overflow-y-auto p-4">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/pessoas" element={<PessoasPage />} />
             <Route path="/cursos" element={<CursosPage />} />
             <Route path="/matriculas" element={<MatriculasPage />} />
           </Routes>
-        </main>
-      </div>
-    </Router>
-  )
+        </div>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default function AppWrapper() {
+  return (
+    <Router>
+      <App />
+    </Router>
+  );
+}
+
 
